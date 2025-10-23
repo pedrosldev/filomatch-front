@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enquesta de Match - Aula Universitària</title>
+    <style>
+        /* (Los estilos se mantienen igual) */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .question {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .question:last-child {
+            border-bottom: none;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option:hover {
+            background-color: #f0f5ff;
+            border-color: #6a11cb;
+        }
+
+        .option.selected {
+            background-color: #e6f0ff;
+            border-color: #2575fc;
+        }
+
+        .option input {
+            margin-right: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .match-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #6a11cb;
+        }
+
+        .match-percentage {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6a11cb;
+            margin-right: 15px;
+            min-width: 60px;
+        }
+
+        .match-info {
+            flex: 1;
+        }
+
+        .match-names {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .match-details {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom: 3px solid #6a11cb;
+            color: #6a11cb;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .admin-section {
+            margin-top: 30px;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .admin-controls button {
+            flex: 1;
+        }
+
+        .user-list {
+            list-style-type: none;
+        }
+
+        .user-list li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .user-list li:last-child {
+            border-bottom: none;
+        }
+
+        .highlight {
+            background-color: #e6f0ff;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background-color: #ffe6e6;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #d63031;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Enquesta de Compatibilitat</h1>
+            <p class="description">Completa l'enquesta i descobreix els teus match amb companys de l'aula</p>
+        </header>
+
+        <div class="card">
+            <div class="tabs">
+                <div class="tab active" data-tab="survey">Enquesta</div>
+                <div class="tab" data-tab="results">Resultats</div>
+                <div class="tab" data-tab="admin">Administració</div>
+            </div>
+
+            <div class="tab-content active" id="survey">
+                <div id="errorMessage" class="error" style="display: none;"></div>
+
+                <div class="form-group">
+                    <label for="userName">El teu nom:</label>
+                    <input type="text" id="userName" placeholder="Introdueix el teu nom">
+                </div>
+
+                <div id="questionsContainer">
+                    <div class="loading">Carregant preguntes...</div>
+                </div>
+
+                <button id="submitSurvey">Enviar Respostes</button>
+            </div>
+
+            <div class="tab-content" id="results">
+                <h2>Els teus Match</h2>
+                <div id="resultsError" class="error" style="display: none;"></div>
+                <p id="noResultsMessage" style="display: none; text-align: center; padding: 20px;">
+                    Encara no hi ha suficients respostes per calcular match. Torna més tard.
+                </p>
+                <div id="matchesContainer">
+                    <!-- Els match es mostraran aquí -->
+                </div>
+            </div>
+
+            <div class="tab-content" id="admin">
+                <div class="admin-section">
+                    <h2>Panell d'Administració</h2>
+                    <p>Des d'aquí pots gestionar les respostes i veure totes les coincidències.</p>
+
+                    <div class="admin-controls">
+                        <button id="viewAllMatches">Veure tots els match</button>
+                        <button id="reloadUsers">Actualitzar llista</button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Usuaris que han respost</h3>
+                        <div id="usersError" class="error" style="display: none;"></div>
+                        <ul id="userList" class="user-list">
+                            <li class="loading">Carregant usuaris...</li>
+                        </ul>
+                    </div>
+
+                    <div id="allMatchesContainer">
+                        <!-- Tots els match es mostraran aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuració - ACTUALIZADO para Node.js
+        const API_URL = 'http://localhost:3000/api';
+
+        // Variables globals
+        let surveyQuestions = [];
+        let currentUser = '';
+
+        // Inicialització de l'aplicació
+        document.addEventListener('DOMContentLoaded', function () {
+            // Carregar preguntes en iniciar
+            loadQuestions();
+
+            // Configurar esdeveniments
+            setupEventListeners();
+
+            // Actualitzar llista d'usuaris
+            loadUsers();
+        });
+
+        // Carregar preguntes des del servidor - ACTUALIZADO
+        async function loadQuestions() {
+            try {
+                const response = await fetch(`${API_URL}/preguntes`);
+                const data = await response.json();
+
+                if (data.error) {
+                    showError('survey', 'Error en carregar preguntes: ' + data.error);
+                    return;
+                }
+
+                surveyQuestions = data;
+                generateQuestions();
+            } catch (error) {
+                showError('survey', 'Error de connexió: ' + error.message);
+            }
+        }
+
+        // Generar les preguntes al DOM
+        function generateQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            surveyQuestions.forEach(question => {
+                const questionElement = document.createElement('div');
+                questionElement.className = 'question';
+
+                const questionText = document.createElement('div');
+                questionText.className = 'question-text';
+                questionText.textContent = question.text;
+                questionElement.appendChild(questionText);
+
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'options';
+
+                question.options.forEach((option, index) => {
+                    const optionId = `q${question.id}_opt${index}`;
+
+                    const optionElement = document.createElement('label');
+                    optionElement.className = 'option';
+                    optionElement.innerHTML = `
+                        <input type="radio" name="question_${question.id}" value="${index}" id="${optionId}">
+                        ${option}
+                    `;
+
+                    optionsContainer.appendChild(optionElement);
+                });
+
+                questionElement.appendChild(optionsContainer);
+                container.appendChild(questionElement);
+            });
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Enviament d'enquesta
+            document.getElementById('submitSurvey').addEventListener('click', submitSurvey);
+
+            // Navegació per pestanyes
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function () {
+                    // Desactivar totes les pestanyes
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    // Activar pestanya seleccionada
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.tab).classList.add('active');
+
+                    // Si és la pestanya de resultats, calcular match
+                    if (this.dataset.tab === 'results') {
+                        calculateAndDisplayMatches();
+                    } else if (this.dataset.tab === 'admin') {
+                        loadUsers();
+                    }
+                });
+            });
+
+            // Controls d'administració
+            document.getElementById('viewAllMatches').addEventListener('click', showAllMatches);
+            document.getElementById('reloadUsers').addEventListener('click', loadUsers);
+
+            // Selecció d'opcions
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('.option')) {
+                    const option = e.target.closest('.option');
+                    const radio = option.querySelector('input[type="radio"]');
+                    radio.checked = true;
+
+                    // Actualitzar estils visuals
+                    option.parentNode.querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                }
+            });
+        }
+
+        // Enviar enquesta al servidor - ACTUALIZADO
+        async function submitSurvey() {
+            const userName = document.getElementById('userName').value.trim();
+
+            if (!userName) {
+                showError('survey', 'Si us plau, introdueix el teu nom.');
+                return;
+            }
+
+            // Recopilar respostes
+            const responses = {};
+            let allAnswered = true;
+
+            surveyQuestions.forEach(question => {
+                const selectedOption = document.querySelector(`input[name="question_${question.id}"]:checked`);
+
+                if (selectedOption) {
+                    responses[question.id] = parseInt(selectedOption.value);
+                } else {
+                    allAnswered = false;
+                }
+            });
+
+            if (!allAnswered) {
+                showError('survey', 'Si us plau, respon totes les preguntes.');
+                return;
+            }
+
+            // Deshabilitar botó mentre s'envia
+            const submitButton = document.getElementById('submitSurvey');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Enviant...';
+
+            try {
+                const response = await fetch(`${API_URL}/respostes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        nom: userName,
+                        respostes: responses
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showError('survey', 'Error en guardar respostes: ' + data.error);
+                } else {
+                    currentUser = userName;
+                    alert(`Gràcies ${userName}! Les teves respostes han estat guardades.`);
+
+                    // Netejar formulari
+                    document.getElementById('userName').value = '';
+                    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                        radio.checked = false;
+                    });
+                    document.querySelectorAll('.option').forEach(option => {
+                        option.classList.remove('selected');
+                    });
+
+                    // Actualitzar llista d'usuaris
+                    loadUsers();
+                }
+            } catch (error) {
+                showError('survey', 'Error de connexió: ' + error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Enviar Respostes';
+            }
+        }
+
+        // Calcular i mostrar matches - ACTUALIZADO
+        async function calculateAndDisplayMatches() {
+            const matchesContainer = document.getElementById('matchesContainer');
+            const noResultsMessage = document.getElementById('noResultsMessage');
+            const resultsError = document.getElementById('resultsError');
+
+            matchesContainer.innerHTML = '<div class="loading">Calculant matches...</div>';
+            noResultsMessage.style.display = 'none';
+            resultsError.style.display = 'none';
+
+            if (!currentUser) {
+                const userName = prompt('Si us plau, introdueix el teu nom per veure els teus matches:');
+                if (!userName) return;
+                currentUser = userName;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/matches`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        nom_usuari: currentUser
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultsError.textContent = 'Error: ' + data.error;
+                    resultsError.style.display = 'block';
+                    matchesContainer.innerHTML = '';
+                    return;
+                }
+
+                matchesContainer.innerHTML = '';
+
+                if (data.length === 0) {
+                    noResultsMessage.style.display = 'block';
+                    return;
+                }
+
+                // Mostrar matches
+                data.forEach(match => {
+                    const matchCard = document.createElement('div');
+                    matchCard.className = 'match-card';
+
+                    matchCard.innerHTML = `
+                        <div class="match-percentage">${match.similitud}%</div>
+                        <div class="match-info">
+                            <div class="match-names">${currentUser} & ${match.usuari}</div>
+                            <div class="match-details">Teniu ${match.respostes_iguals} respostes similars de ${match.total_preguntes} preguntes</div>
+                        </div>
+                    `;
+
+                    matchesContainer.appendChild(matchCard);
+                });
+            } catch (error) {
+                resultsError.textContent = 'Error de connexió: ' + error.message;
+                resultsError.style.display = 'block';
+                matchesContainer.innerHTML = '';
+            }
+        }
+
+        // Carregar llista d'usuaris - ACTUALIZADO
+        async function loadUsers() {
+            const userList = document.getElementById('userList');
+            const usersError = document.getElementById('usersError');
+
+            userList.innerHTML = '<li class="loading">Carregant usuaris...</li>';
+            usersError.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/usuaris`);
+                const data = await response.json();
+
+                if (data.error) {
+                    usersError.textContent = 'Error: ' + data.error;
+                    usersError.style.display = 'block';
+                    return;
+                }
+
+                userList.innerHTML = '';
+
+                if (data.length === 0) {
+                    userList.innerHTML = '<li>No hi ha usuaris registrats</li>';
+                    return;
+                }
+
+                data.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        <span>${user.nom}</span>
+                        <span class="highlight">${user.comptador_respostes} respostes</span>
+                    `;
+                    userList.appendChild(listItem);
+                });
+            } catch (error) {
+                usersError.textContent = 'Error de connexió: ' + error.message;
+                usersError.style.display = 'block';
+            }
+        }
+
+        // Mostrar tots els matches (vista d'administrador) - ACTUALIZADO
+        async function showAllMatches() {
+            const container = document.getElementById('allMatchesContainer');
+            container.innerHTML = '<div class="loading">Calculant tots els matches...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/tots-matches`);
+                const data = await response.json();
+
+                if (data.error) {
+                    container.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                container.innerHTML = '<h3>Tots els match del grup</h3>';
+
+                if (data.length === 0) {
+                    container.innerHTML += '<p>No hi ha suficients usuaris per calcular match.</p>';
+                    return;
+                }
+
+                // Mostrar resultats
+                data.forEach(match => {
+                    const matchCard = document.createElement('div');
+                    matchCard.className = 'match-card';
+
+                    matchCard.innerHTML = `
+                        <div class="match-percentage">${match.similitud}%</div>
+                        <div class="match-info">
+                            <div class="match-names">${match.usuaris[0]} & ${match.usuaris[1]}</div>
+                            <div class="match-details">Teniu ${match.respostes_iguals} respostes similars de ${match.total_preguntes} preguntes</div>
+                        </div>
+                    `;
+
+                    container.appendChild(matchCard);
+                });
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error de connexió: ${error.message}</div>`;
+            }
+        }
+
+        // Mostrar missatge d'error
+        function showError(section, message) {
+            const errorElement = document.getElementById(`${section}Error`) || document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+
+            // Amagar error després de 5 segons
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>
