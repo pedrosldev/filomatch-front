@@ -78,27 +78,30 @@ function setupEventListeners() {
     .getElementById("submitSurvey")
     .addEventListener("click", submitSurvey);
 
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", function () {
-    const tabName = this.dataset.tab;
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", function () {
+      const tabName = this.dataset.tab;
 
-    // Si son pestañas restringidas y no hay acceso, mostrar modal
-    if ((tabName === "results" || tabName === "admin") && !hasExpositorAccess) {
-      showAccessModal();
-      return; // No cambiar de pestaña
-    }
+      // Si son pestañas restringidas y no hay acceso, mostrar modal
+      if (
+        (tabName === "results" || tabName === "admin") &&
+        !hasExpositorAccess
+      ) {
+        showAccessModal();
+        return; // No cambiar de pestaña
+      }
 
-    // Cambiar de pestaña normalmente
-    switchToTab(tabName);
+      // Cambiar de pestaña normalmente
+      switchToTab(tabName);
 
-    // Si és la pestanya de resultats, calcular match
-    if (tabName === "results") {
-      calculateAndDisplayMatches();
-    } else if (tabName === "admin") {
-      loadUsers();
-    }
+      // Si és la pestanya de resultats, calcular match
+      if (tabName === "results") {
+        calculateAndDisplayMatches();
+      } else if (tabName === "admin") {
+        loadUsers();
+      }
+    });
   });
-});
 
   // Controls d'administració
   document
@@ -516,69 +519,82 @@ function showAccessModal() {
 
 // Función para verificar acceso
 function setupAccessControl() {
-    // Verificar que los elementos existen
-    const resultsTab = document.getElementById('resultsTab');
-    const adminTab = document.getElementById('adminTab');
-    
-    if (!resultsTab || !adminTab) {
-        console.error('No se encontraron las pestañas de acceso restringido');
-        return;
+  // Verificar que los elementos existen
+  const resultsTab = document.getElementById("resultsTab");
+  const adminTab = document.getElementById("adminTab");
+
+  if (!resultsTab || !adminTab) {
+    console.error("No se encontraron las pestañas de acceso restringido");
+    return;
+  }
+
+  // Event listener para cuando se concede acceso
+  document
+    .getElementById("confirmAccess")
+    .addEventListener("click", function () {
+      const password = document.getElementById("accessPassword").value;
+
+      if (password === EXPOSITOR_PASSWORD) {
+        hasExpositorAccess = true;
+        document.getElementById("accessModal").style.display = "none";
+        document.getElementById("accessPassword").value = "";
+
+        // Mostrar pestañas desbloqueadas
+        resultsTab.innerHTML = resultsTab.innerHTML.replace(" 🔒", "");
+        adminTab.innerHTML = adminTab.innerHTML.replace(" 🔒", "");
+        resultsTab.classList.add("unlocked");
+        adminTab.classList.add("unlocked");
+
+        alert("✅ Accés concedit. Ara pots veure els resultats.");
+      } else {
+        alert(
+          "❌ Contrasenya incorrecta. Posa't en contacte amb les expositors."
+        );
+        document.getElementById("accessPassword").value = "";
+        document.getElementById("accessPassword").focus();
+      }
+    });
+
+  document
+    .getElementById("cancelAccess")
+    .addEventListener("click", function () {
+      document.getElementById("accessModal").style.display = "none";
+      document.getElementById("accessPassword").value = "";
+      // Al cancelar, asegurarse de que vuelve a la pestaña de encuesta
+      switchToTab("survey");
+    });
+
+  // Cerrar modal con ESC
+  document.addEventListener("keydown", function (e) {
+    if (
+      e.key === "Escape" &&
+      document.getElementById("accessModal").style.display === "flex"
+    ) {
+      document.getElementById("accessModal").style.display = "none";
+      switchToTab("survey");
     }
+  });
 
-
-
-    // Event listener para cuando se concede acceso
-    document.getElementById('confirmAccess').addEventListener('click', function() {
-        const password = document.getElementById('accessPassword').value;
-        
-        if (password === EXPOSITOR_PASSWORD) {
-            hasExpositorAccess = true;
-            document.getElementById('accessModal').style.display = 'none';
-            document.getElementById('accessPassword').value = '';
-            
-            // Mostrar pestañas desbloqueadas
-            resultsTab.style.display = 'block';
-            adminTab.style.display = 'block';
-            resultsTab.classList.add('unlocked');
-            adminTab.classList.add('unlocked');
-            
-            alert('✅ Accés concedit. Ara pots veure els resultats.');
-        } else {
-            alert('❌ Contrasenya incorrecta. Posa\'t en contacte amb les expositors.');
-            document.getElementById('accessPassword').value = '';
-            document.getElementById('accessPassword').focus();
-        }
-    });
-
-    document.getElementById('cancelAccess').addEventListener('click', function() {
-        document.getElementById('accessModal').style.display = 'none';
-        document.getElementById('accessPassword').value = '';
-        // Al cancelar, asegurarse de que vuelve a la pestaña de encuesta
-        switchToTab('survey');
-    });
-
-    // Cerrar modal con ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('accessModal').style.display === 'flex') {
-            document.getElementById('accessModal').style.display = 'none';
-            switchToTab('survey');
-        }
-    });
-    
-    // Cerrar modal haciendo clic fuera
-    document.getElementById('accessModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            document.getElementById('accessModal').style.display = 'none';
-            switchToTab('survey');
-        }
+  // Cerrar modal haciendo clic fuera
+  document
+    .getElementById("accessModal")
+    .addEventListener("click", function (e) {
+      if (e.target === this) {
+        document.getElementById("accessModal").style.display = "none";
+        switchToTab("survey");
+      }
     });
 }
 
 // Función auxiliar para cambiar de pestaña
 function switchToTab(tabName) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    document.getElementById(tabName).classList.add('active');
+  document
+    .querySelectorAll(".tab")
+    .forEach((t) => t.classList.remove("active"));
+  document
+    .querySelectorAll(".tab-content")
+    .forEach((c) => c.classList.remove("active"));
+
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add("active");
+  document.getElementById(tabName).classList.add("active");
 }
