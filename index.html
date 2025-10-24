@@ -96,6 +96,149 @@
             gap: 10px;
         }
 
+        /* Efectos de corazoncitos */
+        .heart-container {
+            position: relative;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            pointer-events: none;
+            z-index: 10;
+            animation: floatUp 3s ease-in forwards;
+            opacity: 0.8;
+        }
+
+        .heart::before {
+            content: '💖';
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: translateY(-30px) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-60px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Diferentes colores de corazones */
+        .heart.red::before {
+            content: '❤️';
+        }
+
+        .heart.pink::before {
+            content: '💖';
+        }
+
+        .heart.orange::before {
+            content: '🧡';
+        }
+
+        .heart.yellow::before {
+            content: '💛';
+        }
+
+        .heart.purple::before {
+            content: '💜';
+        }
+
+        /* Efecto hover en las cards de match */
+        .match-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .match-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(106, 17, 203, 0.15);
+        }
+
+        .match-card:hover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Efectos especiales para match perfecto */
+        .match-card.perfect-match {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-left: 4px solid #ff6b00;
+            animation: pulse-gold 2s infinite;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .match-card.perfect-match .match-percentage {
+            color: #ff6b00;
+            font-size: 1.8rem;
+        }
+
+        .perfect-match-badge {
+            background: #ff6b00;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes pulse-gold {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
         @media (max-width: 600px) {
             .options {
                 grid-template-columns: 1fr;
@@ -526,6 +669,7 @@
         }
 
         // Calcular i mostrar matches - ACTUALIZADO
+        // Calcular i mostrar matches - ACTUALIZADO Y CORREGIDO
         async function calculateAndDisplayMatches() {
             const matchesContainer = document.getElementById('matchesContainer');
             const noResultsMessage = document.getElementById('noResultsMessage');
@@ -569,20 +713,41 @@
                 }
 
                 // Mostrar matches
+                let hasPerfectMatch = false;
+
                 data.forEach(match => {
                     const matchCard = document.createElement('div');
-                    matchCard.className = 'match-card';
+                    const isPerfectMatch = match.similitud === 100;
+
+                    if (isPerfectMatch) {
+                        matchCard.className = 'match-card perfect-match heart-container';
+                        hasPerfectMatch = true;
+                    } else {
+                        matchCard.className = 'match-card heart-container';
+                    }
 
                     matchCard.innerHTML = `
-                        <div class="match-percentage">${match.similitud}%</div>
-                        <div class="match-info">
-                            <div class="match-names">${currentUser} & ${match.usuari}</div>
-                            <div class="match-details">Teniu ${match.respostes_iguals} respostes similars de ${match.total_preguntes} preguntes</div>
-                        </div>
-                    `;
+                <div class="match-percentage">${match.similitud}%</div>
+                <div class="match-info">
+                    <div class="match-names">
+                        ${currentUser} & ${match.usuari}
+                        ${isPerfectMatch ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>' : ''}
+                    </div>
+                    <div class="match-details">Teniu ${match.respostes_iguals} respostes similars de ${match.total_preguntes} preguntes</div>
+                </div>
+            `;
 
                     matchesContainer.appendChild(matchCard);
+
+                    // Generar corazones según el porcentaje de match
+                    generateHearts(matchCard, match.similitud);
                 });
+
+                // Efectos especiales para match perfecto
+                if (hasPerfectMatch) {
+                    showPerfectMatchCelebration();
+                }
+
             } catch (error) {
                 resultsError.textContent = 'Error de connexió: ' + error.message;
                 resultsError.style.display = 'block';
@@ -664,6 +829,7 @@
                     `;
 
                     container.appendChild(matchCard);
+                    generateHearts(matchCard, match.similitud);
                 });
             } catch (error) {
                 container.innerHTML = `<div class="error">Error de connexió: ${error.message}</div>`;
@@ -680,6 +846,110 @@
             setTimeout(() => {
                 errorElement.style.display = 'none';
             }, 5000);
+        }
+
+        // Función para generar corazones animados
+        function generateHearts(matchCard, matchPercentage) {
+            // Número de corazones basado en el porcentaje de match
+            let heartCount;
+
+            if (matchPercentage === 100) {
+                heartCount = 15; // Muchos corazones para match perfecto
+            } else if (matchPercentage >= 80) {
+                heartCount = 8;
+            } else if (matchPercentage >= 60) {
+                heartCount = 5;
+            } else if (matchPercentage >= 40) {
+                heartCount = 3;
+            } else {
+                heartCount = 1; // Al menos un corazoncito
+            }
+
+            // Crear corazones
+            for (let i = 0; i < heartCount; i++) {
+                setTimeout(() => {
+                    createHeart(matchCard, matchPercentage);
+                }, i * 200); // Espaciado entre corazones
+            }
+
+            // Si es un buen match, añadir efecto hover con más corazones
+            if (matchPercentage >= 60) {
+                matchCard.addEventListener('mouseenter', function () {
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => {
+                            createHeart(matchCard, matchPercentage);
+                        }, i * 150);
+                    }
+                });
+            }
+        }
+    // Función para mostrar celebración de match perfecto
+        function showPerfectMatchCelebration() {
+            // Mostrar alerta especial
+            setTimeout(() => {
+                alert('🎉 MATCH PERFECTE TROBAT! 🎉\n\nÉs l\'ànima bessona de les respostes!');
+            }, 500);
+        }
+        // Función para crear un corazón individual
+        function createHeart(container, matchPercentage) {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+
+            // Elegir color basado en el porcentaje
+            const heartTypes = ['red', 'pink', 'orange', 'yellow', 'purple'];
+            let heartType;
+
+            if (matchPercentage === 100) {
+                heartType = heartTypes[Math.floor(Math.random() * heartTypes.length)]; // Aleatorio para match perfecto
+            } else if (matchPercentage >= 80) {
+                heartType = 'red';
+            } else if (matchPercentage >= 60) {
+                heartType = 'pink';
+            } else if (matchPercentage >= 40) {
+                heartType = 'orange';
+            } else {
+                heartType = 'yellow';
+            }
+
+            heart.classList.add(heartType);
+
+            // Posición aleatoria dentro de la card
+            const cardRect = container.getBoundingClientRect();
+            const startX = Math.random() * (cardRect.width - 30);
+            const startY = cardRect.height - 10;
+
+            heart.style.left = startX + 'px';
+            heart.style.top = startY + 'px';
+
+            // Tamaño aleatorio
+            const size = 15 + Math.random() * 15;
+            heart.style.fontSize = size + 'px';
+
+            // Animación personalizada
+            const animation = heart.animate([
+                {
+                    transform: `translateY(0) scale(0.5)`,
+                    opacity: 0.8
+                },
+                {
+                    transform: `translateY(-${30 + Math.random() * 40}px) scale(1)`,
+                    opacity: 1
+                },
+                {
+                    transform: `translateY(-${60 + Math.random() * 40}px) scale(0.8)`,
+                    opacity: 0
+                }
+            ], {
+                duration: 2000 + Math.random() * 1000,
+                easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+            });
+
+            container.appendChild(heart);
+
+            // Eliminar el corazón después de la animación
+            animation.onfinish = () => {
+                heart.remove();
+            };
         }
     </script>
 </body>
