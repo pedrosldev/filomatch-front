@@ -504,7 +504,7 @@ function createHeart(container, matchPercentage) {
 }
 
 // Configuración de acceso
-const EXPOSITOR_PASSWORD = "filomatch2024"; // Cambia esta contraseña
+const EXPOSITOR_PASSWORD = "filomatch2025"; 
 let hasExpositorAccess = false;
 
 // Función para mostrar el modal de acceso
