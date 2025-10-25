@@ -4,6 +4,7 @@ const API_URL = "https://www.filomatch-back.piterxus.com/api";
 // Variables globals
 let surveyQuestions = [];
 let currentUser = "";
+let progressInterval;
 
 document.addEventListener("DOMContentLoaded", function () {
   // Configurar control de acceso PRIMERO
@@ -17,6 +18,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Actualitzar llista d'usuaris
   loadUsers();
+
+});
+
+window.addEventListener("beforeunload", () => {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+  }
 });
 // Carregar preguntes des del servidor - ACTUALIZADO
 async function loadQuestions() {
@@ -34,6 +42,152 @@ async function loadQuestions() {
   } catch (error) {
     showError("survey", "Error de connexió: " + error.message);
   }
+}
+
+// Función para actualizar el progreso - VERSIÓN SEGURA
+function updateProgress() {
+  // Verificar que los elementos del progreso existen
+  const progressFill = document.getElementById("progressFill");
+  const progressPercentage = document.getElementById("progressPercentage");
+  
+  if (!progressFill || !progressPercentage) {
+    console.log("Elementos de progreso no encontrados, esperando...");
+    return;
+  }
+
+  const totalQuestions = surveyQuestions.length;
+  let answeredCount = 0;
+  const answeredQuestions = [];
+
+  // Contar preguntas respondidas
+  surveyQuestions.forEach((question) => {
+    const selectedOption = document.querySelector(
+      `input[name="question_${question.id}"]:checked`
+    );
+    
+    if (selectedOption) {
+      answeredCount++;
+      answeredQuestions.push(question.id);
+    }
+
+    // Actualizar clases de las preguntas (solo si existen)
+    const questionElement = document.querySelector(`input[name="question_${question.id}"]`)?.closest(".question");
+    if (questionElement) {
+      const isAnswered = answeredQuestions.includes(question.id);
+      if (isAnswered) {
+        questionElement.classList.add("answered");
+        questionElement.classList.remove("pending");
+      } else {
+        questionElement.classList.add("pending");
+        questionElement.classList.remove("answered");
+      }
+    }
+  });
+
+  // Calcular porcentaje
+  const percentage = Math.round((answeredCount / totalQuestions) * 100);
+
+  // Actualizar barra de progreso
+  progressFill.style.width = percentage + "%";
+  progressPercentage.textContent = percentage + "%";
+
+  // Actualizar elementos opcionales (si existen)
+  const summaryPercentage = document.getElementById("summaryPercentage");
+  const answeredCountEl = document.getElementById("answeredCount");
+  const totalCountEl = document.getElementById("totalCount");
+  
+  if (summaryPercentage) summaryPercentage.textContent = percentage + "%";
+  if (answeredCountEl) answeredCountEl.textContent = answeredCount;
+  if (totalCountEl) totalCountEl.textContent = totalQuestions;
+
+  // Actualizar detalles del progreso
+  const progressDetails = document.getElementById("progressDetails");
+  if (progressDetails) {
+    if (percentage === 100) {
+      progressDetails.innerHTML =
+        '<small style="color: #4caf50;">✅ Totes les preguntes contestades! Ja pots enviar l\'enquesta.</small>';
+    } else {
+      progressDetails.innerHTML = `<small>Et queden <strong>${
+        totalQuestions - answeredCount
+      }</strong> preguntes per contestar</small>`;
+    }
+  }
+
+  // Actualizar resumen de preguntas (si existe)
+  updateQuestionsSummary(answeredQuestions);
+
+  return { answeredCount, totalQuestions, percentage };
+}
+
+// Función para actualizar el resumen de preguntas 
+function updateQuestionsSummary(answeredQuestions) {
+  const summaryContainer = document.getElementById("questionsSummary");
+  if (!summaryContainer) return; // Si no existe, salir
+
+  summaryContainer.innerHTML = "";
+
+  surveyQuestions.forEach((question) => {
+    const isAnswered = answeredQuestions.includes(question.id);
+    const questionElement = document.createElement("div");
+    questionElement.className = `question-indicator ${
+      isAnswered ? "answered" : "pending"
+    }`;
+
+    questionElement.innerHTML = `
+      <div class="question-status ${
+        isAnswered ? "status-answered" : "status-pending"
+      }">
+        ${isAnswered ? "✓" : "?"}
+      </div>
+      <div class="question-number">${question.id}.</div>
+      <div class="question-preview">${question.text.substring(0, 40)}${
+      question.text.length > 40 ? "..." : ""
+    }</div>
+    `;
+
+    // Hacer clic en la pregunta te lleva a ella
+    questionElement.addEventListener("click", () => {
+      scrollToQuestion(question.id);
+    });
+
+    summaryContainer.appendChild(questionElement);
+  });
+}
+
+// Función para desplazarse a una pregunta
+function scrollToQuestion(questionId) {
+  const questionElement = document
+    .querySelector(`input[name="question_${questionId}"]`)
+    .closest(".question");
+  questionElement.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+
+  // Destacar la pregunta momentáneamente
+  questionElement.style.backgroundColor = "#f0f5ff";
+  setTimeout(() => {
+    questionElement.style.backgroundColor = "";
+  }, 2000);
+}
+
+// Función para mostrar/ocultar resumen
+function toggleSummary() {
+  const summaryContent = document.getElementById("summaryContent");
+  summaryContent.classList.toggle("show");
+}
+
+// Inicializar el sistema de progreso
+function initProgressSystem() {
+  // Actualizar progreso cada 500ms
+  progressInterval = setInterval(updateProgress, 500);
+
+  // También actualizar cuando se responda una pregunta
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".option")) {
+      setTimeout(updateProgress, 100);
+    }
+  });
 }
 
 // Generar les preguntes al DOM
@@ -68,7 +222,9 @@ function generateQuestions() {
 
     questionElement.appendChild(optionsContainer);
     container.appendChild(questionElement);
+     
   });
+  setTimeout(initProgressSystem, 0);
 }
 
 // Configurar event listeners
@@ -168,28 +324,28 @@ async function submitSurvey() {
     return;
   }
 
-     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-     if (!emailRegex.test(userEmail)) {
-       showError("survey", "Si us plau, introdueix un email vàlid.");
-       return;
-     }
-       try {
-         const response = await fetch(
-           `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
-         );
-         const data = await response.json();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(userEmail)) {
+    showError("survey", "Si us plau, introdueix un email vàlid.");
+    return;
+  }
+  try {
+    const response = await fetch(
+      `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
+    );
+    const data = await response.json();
 
-         if (data.existeix) {
-           showError(
-             "survey",
-             `⚠️ L'email "${userEmail}" ja ha participat en l'enquesta. Cada alumne només pot respondre una vegada.`
-           );
-           return;
-         }
-       } catch (error) {
-         console.error("Error verificant email:", error);
-         // Si falla la verificación, permitimos continuar por seguridad
-       }
+    if (data.existeix) {
+      showError(
+        "survey",
+        `⚠️ L'email "${userEmail}" ja ha participat en l'enquesta. Cada alumne només pot respondre una vegada.`
+      );
+      return;
+    }
+  } catch (error) {
+    console.error("Error verificant email:", error);
+    // Si falla la verificación, permitimos continuar por seguridad
+  }
 
   // Recopilar respostes
   const responses = {};
@@ -563,7 +719,7 @@ function createHeart(container, matchPercentage) {
 }
 
 // Configuración de acceso
-const EXPOSITOR_PASSWORD = "filomatch2025"; 
+const EXPOSITOR_PASSWORD = "filomatch2025";
 let hasExpositorAccess = false;
 
 // Función para mostrar el modal de acceso
