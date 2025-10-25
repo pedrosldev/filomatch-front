@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enquesta de Match - Aula Universitària</title>
- <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -16,11 +16,11 @@
         </header>
 
         <div class="card">
-<div class="tabs">
-    <div class="tab active" data-tab="survey">Enquesta</div>
-    <div class="tab" data-tab="results" id="resultsTab">Resultats 🔒</div>
-    <div class="tab" data-tab="admin" id="adminTab">Admin 🔒</div>
-</div>
+            <div class="tabs">
+                <div class="tab active" data-tab="survey">Enquesta</div>
+                <div class="tab" data-tab="results" id="resultsTab">Resultats 🔒</div>
+                <div class="tab" data-tab="admin" id="adminTab">Admin 🔒</div>
+            </div>
 
             <div class="tab-content active" id="survey">
                 <div id="errorMessage" class="error" style="display: none;"></div>
@@ -34,7 +34,11 @@
                     <div class="loading">Carregant preguntes...</div>
                 </div>
 
-                <button id="submitSurvey">Enviar Respostes</button>
+                <div class="submitSurveyContainer">
+                    <button id="submitSurvey">Enviar Respostes</button>
+                </div>
+
+
             </div>
 
             <div class="tab-content" id="results">
