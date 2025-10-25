@@ -73,6 +73,39 @@ function generateQuestions() {
 
 // Configurar event listeners
 function setupEventListeners() {
+  // Verificación en tiempo real del email
+  document
+    .getElementById("userEmail")
+    .addEventListener("blur", async function () {
+      const userEmail = this.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(userEmail)) return;
+
+      const checkMessage = document.getElementById("emailCheckMessage");
+      if (!checkMessage) return;
+
+      checkMessage.textContent = "Comprovant email...";
+      checkMessage.className = "user-check-message checking";
+
+      try {
+        const response = await fetch(
+          `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
+        );
+        const data = await response.json();
+
+        if (data.existeix) {
+          checkMessage.textContent = `⚠️ Aquest email ja ha participat`;
+          checkMessage.className = "user-check-message taken";
+        } else {
+          checkMessage.textContent = `✅ Email disponible`;
+          checkMessage.className = "user-check-message available";
+        }
+      } catch (error) {
+        checkMessage.textContent = "❌ Error de connexió";
+        checkMessage.className = "user-check-message taken";
+      }
+    });
   // Enviament d'enquesta
   document
     .getElementById("submitSurvey")
@@ -128,11 +161,35 @@ function setupEventListeners() {
 // Enviar enquesta al servidor - ACTUALIZADO
 async function submitSurvey() {
   const userName = document.getElementById("userName").value.trim();
+  const userEmail = document.getElementById("userEmail").value.trim();
 
-  if (!userName) {
-    showError("survey", "Si us plau, introdueix el teu nom.");
+  if (!userName || !userEmail) {
+    showError("survey", "Si us plau, introdueix el teu nom i email.");
     return;
   }
+
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     if (!emailRegex.test(userEmail)) {
+       showError("survey", "Si us plau, introdueix un email vàlid.");
+       return;
+     }
+       try {
+         const response = await fetch(
+           `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
+         );
+         const data = await response.json();
+
+         if (data.existeix) {
+           showError(
+             "survey",
+             `⚠️ L'email "${userEmail}" ja ha participat en l'enquesta. Cada alumne només pot respondre una vegada.`
+           );
+           return;
+         }
+       } catch (error) {
+         console.error("Error verificant email:", error);
+         // Si falla la verificación, permitimos continuar por seguridad
+       }
 
   // Recopilar respostes
   const responses = {};
@@ -168,6 +225,7 @@ async function submitSurvey() {
       },
       body: JSON.stringify({
         nom: userName,
+        email: userEmail,
         respostes: responses,
       }),
     });
@@ -182,6 +240,7 @@ async function submitSurvey() {
 
       // Netejar formulari
       document.getElementById("userName").value = "";
+      document.getElementById("userEmail").value = "";
       document.querySelectorAll('input[type="radio"]').forEach((radio) => {
         radio.checked = false;
       });
