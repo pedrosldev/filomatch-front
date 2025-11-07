@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Actualitzar llista d'usuaris
   loadUsers();
 
+  // INICIALIZAR TABS DEL ADMIN
+  setupAdminTabs();
 });
 
 window.addEventListener("beforeunload", () => {
@@ -28,6 +30,7 @@ window.addEventListener("beforeunload", () => {
     clearInterval(progressInterval);
   }
 });
+
 // Carregar preguntes des del servidor - ACTUALIZADO
 async function loadQuestions() {
   try {
@@ -51,7 +54,7 @@ function updateProgress() {
   // Verificar que los elementos del progreso existen
   const progressFill = document.getElementById("progressFill");
   const progressPercentage = document.getElementById("progressPercentage");
-  
+
   if (!progressFill || !progressPercentage) {
     console.log("Elementos de progreso no encontrados, esperando...");
     return;
@@ -66,14 +69,16 @@ function updateProgress() {
     const selectedOption = document.querySelector(
       `input[name="question_${question.id}"]:checked`
     );
-    
+
     if (selectedOption) {
       answeredCount++;
       answeredQuestions.push(question.id);
     }
 
     // Actualizar clases de las preguntas (solo si existen)
-    const questionElement = document.querySelector(`input[name="question_${question.id}"]`)?.closest(".question");
+    const questionElement = document
+      .querySelector(`input[name="question_${question.id}"]`)
+      ?.closest(".question");
     if (questionElement) {
       const isAnswered = answeredQuestions.includes(question.id);
       if (isAnswered) {
@@ -97,7 +102,7 @@ function updateProgress() {
   const summaryPercentage = document.getElementById("summaryPercentage");
   const answeredCountEl = document.getElementById("answeredCount");
   const totalCountEl = document.getElementById("totalCount");
-  
+
   if (summaryPercentage) summaryPercentage.textContent = percentage + "%";
   if (answeredCountEl) answeredCountEl.textContent = answeredCount;
   if (totalCountEl) totalCountEl.textContent = totalQuestions;
@@ -121,7 +126,7 @@ function updateProgress() {
   return { answeredCount, totalQuestions, percentage };
 }
 
-// Función para actualizar el resumen de preguntas 
+// Función para actualizar el resumen de preguntas
 function updateQuestionsSummary(answeredQuestions) {
   const summaryContainer = document.getElementById("questionsSummary");
   if (!summaryContainer) return; // Si no existe, salir
@@ -224,7 +229,6 @@ function generateQuestions() {
 
     questionElement.appendChild(optionsContainer);
     container.appendChild(questionElement);
-     
   });
   setTimeout(initProgressSystem, 0);
 }
@@ -294,11 +298,18 @@ function setupEventListeners() {
     });
   });
 
-  // Controls d'administració
+  // Controls d'administració - ACTUALIZADO
   document
     .getElementById("viewAllMatches")
-    .addEventListener("click", showAllMatches);
-  document.getElementById("reloadUsers").addEventListener("click", loadUsers);
+    .addEventListener("click", function () {
+      showAllMatches();
+      switchAdminTab("matches"); // Cambiar a pestaña de matches
+    });
+
+  document.getElementById("reloadUsers").addEventListener("click", function () {
+    loadUsers();
+    switchAdminTab("users"); // Cambiar a pestaña de usuarios
+  });
 
   // Selecció d'opcions
   document.addEventListener("click", function (e) {
@@ -377,15 +388,15 @@ async function submitSurvey() {
     showError("survey", "Si us plau, introdueix un email vàlid.");
     return;
   }
-      const missingQuestions = scrollToFirstUnanswered();
+  const missingQuestions = scrollToFirstUnanswered();
 
-      if (missingQuestions) {
-        showError(
-          "survey",
-          "❌ Faltan preguntas por responder. Te hemos llevado a la primera pendiente."
-        );
-        return; // Detener el envío
-      }
+  if (missingQuestions) {
+    showError(
+      "survey",
+      "❌ Faltan preguntas por responder. Te hemos llevado a la primera pendiente."
+    );
+    return; // Detener el envío
+  }
   try {
     const response = await fetch(
       `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
@@ -478,11 +489,12 @@ async function calculateAndDisplayMatches() {
   const noResultsMessage = document.getElementById("noResultsMessage");
   const resultsError = document.getElementById("resultsError");
 
-  matchesContainer.innerHTML = '<div class="loading">Calculant matches...</div>';
+  matchesContainer.innerHTML =
+    '<div class="loading">Calculant matches...</div>';
   noResultsMessage.style.display = "none";
   resultsError.style.display = "none";
 
-  // PEDIR EMAIL 
+  // PEDIR EMAIL
   let userEmail = prompt(
     "Si us plau, introdueix el teu EMAIL per veure els teus matches:\n\n(El mateix email que vas utilitzar per respondre l'enquesta)"
   );
@@ -531,7 +543,7 @@ async function calculateAndDisplayMatches() {
 
     // SEGUNDO: Usar el NOMBRE real para calcular matches
     const userName = emailData.nom;
-    
+
     const response = await fetch(`${API_URL}/matches`, {
       method: "POST",
       headers: {
@@ -587,9 +599,15 @@ async function calculateAndDisplayMatches() {
         <div class="match-info">
           <div class="match-names">
             ${userName} & ${match.usuari}
-            ${isPerfectMatch ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>' : ""}
+            ${
+              isPerfectMatch
+                ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>'
+                : ""
+            }
           </div>
-          <div class="match-details">Teniu ${match.respostes_iguals} respostes similars de ${match.total_preguntes} preguntes</div>
+          <div class="match-details">Teniu ${
+            match.respostes_iguals
+          } respostes similars de ${match.total_preguntes} preguntes</div>
         </div>
       `;
 
@@ -600,7 +618,6 @@ async function calculateAndDisplayMatches() {
     if (hasPerfectMatch) {
       showPerfectMatchCelebration();
     }
-
   } catch (error) {
     resultsError.innerHTML = `
       ❌ Error de connexió: ${error.message}<br><br>
@@ -612,6 +629,7 @@ async function calculateAndDisplayMatches() {
     matchesContainer.innerHTML = "";
   }
 }
+
 // Carregar llista d'usuaris - ACTUALIZADO
 async function loadUsers() {
   const userList = document.getElementById("userList");
@@ -744,6 +762,7 @@ function generateHearts(matchCard, matchPercentage) {
     });
   }
 }
+
 // Función para mostrar celebración de match perfecto
 function showPerfectMatchCelebration() {
   // Mostrar alerta especial
@@ -753,6 +772,7 @@ function showPerfectMatchCelebration() {
     );
   }, 500);
 }
+
 // Función para crear un corazón individual
 function createHeart(container, matchPercentage) {
   const heart = document.createElement("div");
@@ -830,6 +850,43 @@ function showAccessModal() {
   // Luego mostrar el modal
   document.getElementById("accessModal").style.display = "flex";
   document.getElementById("accessPassword").focus();
+}
+
+// Función para cambiar entre tabs del admin
+function switchAdminTab(tabName) {
+  // Remover active de todos los tabs
+  document
+    .querySelectorAll(".admin-tab")
+    .forEach((t) => t.classList.remove("active"));
+  document
+    .querySelectorAll(".admin-tab-content")
+    .forEach((c) => c.classList.remove("active"));
+
+  // Activar tab clickeado
+  document
+    .querySelector(`[data-admin-tab="${tabName}"]`)
+    .classList.add("active");
+  document
+    .getElementById(
+      `admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Content`
+    )
+    .classList.add("active");
+}
+
+function setupAdminTabs() {
+  const adminTabs = document.querySelectorAll(".admin-tab");
+
+  adminTabs.forEach((tab) => {
+    tab.addEventListener("click", function () {
+      const tabName = this.dataset.adminTab;
+      switchAdminTab(tabName); // Usar la nueva función
+
+      // Cargar datos si es necesario
+      if (tabName === "users") {
+        loadUsers();
+      }
+    });
+  });
 }
 
 // Función para verificar acceso
