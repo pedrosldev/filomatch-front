@@ -1,5 +1,7 @@
 // Configuració - ACTUALIZADO para Node.jsback
-const API_URL = "https://www.filomatch-back.piterxus.com/api";
+// const API_URL = "https://www.filomatch-back.piterxus.com/api";
+// local
+const API_URL = "http://localhost:3000/api";
 
 // Variables globals
 let surveyQuestions = [];
@@ -19,6 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Actualitzar llista d'usuaris
   loadUsers();
 
+  // INICIALIZAR TABS DEL ADMIN
+  setupAdminTabs();
 });
 
 window.addEventListener("beforeunload", () => {
@@ -26,6 +30,7 @@ window.addEventListener("beforeunload", () => {
     clearInterval(progressInterval);
   }
 });
+
 // Carregar preguntes des del servidor - ACTUALIZADO
 async function loadQuestions() {
   try {
@@ -49,7 +54,7 @@ function updateProgress() {
   // Verificar que los elementos del progreso existen
   const progressFill = document.getElementById("progressFill");
   const progressPercentage = document.getElementById("progressPercentage");
-  
+
   if (!progressFill || !progressPercentage) {
     console.log("Elementos de progreso no encontrados, esperando...");
     return;
@@ -64,14 +69,16 @@ function updateProgress() {
     const selectedOption = document.querySelector(
       `input[name="question_${question.id}"]:checked`
     );
-    
+
     if (selectedOption) {
       answeredCount++;
       answeredQuestions.push(question.id);
     }
 
     // Actualizar clases de las preguntas (solo si existen)
-    const questionElement = document.querySelector(`input[name="question_${question.id}"]`)?.closest(".question");
+    const questionElement = document
+      .querySelector(`input[name="question_${question.id}"]`)
+      ?.closest(".question");
     if (questionElement) {
       const isAnswered = answeredQuestions.includes(question.id);
       if (isAnswered) {
@@ -95,7 +102,7 @@ function updateProgress() {
   const summaryPercentage = document.getElementById("summaryPercentage");
   const answeredCountEl = document.getElementById("answeredCount");
   const totalCountEl = document.getElementById("totalCount");
-  
+
   if (summaryPercentage) summaryPercentage.textContent = percentage + "%";
   if (answeredCountEl) answeredCountEl.textContent = answeredCount;
   if (totalCountEl) totalCountEl.textContent = totalQuestions;
@@ -119,7 +126,7 @@ function updateProgress() {
   return { answeredCount, totalQuestions, percentage };
 }
 
-// Función para actualizar el resumen de preguntas 
+// Función para actualizar el resumen de preguntas
 function updateQuestionsSummary(answeredQuestions) {
   const summaryContainer = document.getElementById("questionsSummary");
   if (!summaryContainer) return; // Si no existe, salir
@@ -222,7 +229,6 @@ function generateQuestions() {
 
     questionElement.appendChild(optionsContainer);
     container.appendChild(questionElement);
-     
   });
   setTimeout(initProgressSystem, 0);
 }
@@ -292,11 +298,18 @@ function setupEventListeners() {
     });
   });
 
-  // Controls d'administració
+  // Controls d'administració - ACTUALIZADO
   document
     .getElementById("viewAllMatches")
-    .addEventListener("click", showAllMatches);
-  document.getElementById("reloadUsers").addEventListener("click", loadUsers);
+    .addEventListener("click", function () {
+      showAllMatches();
+      switchAdminTab("matches"); // Cambiar a pestaña de matches
+    });
+
+  document.getElementById("reloadUsers").addEventListener("click", function () {
+    loadUsers();
+    switchAdminTab("users"); // Cambiar a pestaña de usuarios
+  });
 
   // Selecció d'opcions
   document.addEventListener("click", function (e) {
@@ -314,6 +327,52 @@ function setupEventListeners() {
   });
 }
 
+function scrollToFirstUnanswered() {
+  // Buscar todas las preguntas
+  const questions = document.querySelectorAll(".question");
+
+  let firstUnanswered = null;
+
+  // Encontrar la primera pregunta sin responder
+  questions.forEach((question) => {
+    const questionId = question
+      .querySelector('input[type="radio"]')
+      ?.name.replace("question_", "");
+    const isAnswered = document.querySelector(
+      `input[name="question_${questionId}"]:checked`
+    );
+
+    if (!isAnswered && !firstUnanswered) {
+      firstUnanswered = question;
+      // Agregar clase pending si no la tiene
+      question.classList.add("pending");
+    }
+  });
+
+  if (firstUnanswered) {
+    // Hacer scroll suave a la pregunta
+    firstUnanswered.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    // Efecto de destello para destacarla
+    firstUnanswered.style.transition = "all 0.5s ease";
+    firstUnanswered.style.backgroundColor = "#fff5f5";
+    firstUnanswered.style.borderLeft = "4px solid #ff4444";
+
+    // Quitar el efecto después de 3 segundos
+    setTimeout(() => {
+      firstUnanswered.style.backgroundColor = "";
+      firstUnanswered.style.borderLeft = "";
+    }, 3000);
+
+    return true; // Hay preguntas pendientes
+  }
+
+  return false; // Todas respondidas
+}
+
 // Enviar enquesta al servidor - ACTUALIZADO
 async function submitSurvey() {
   const userName = document.getElementById("userName").value.trim();
@@ -328,6 +387,15 @@ async function submitSurvey() {
   if (!emailRegex.test(userEmail)) {
     showError("survey", "Si us plau, introdueix un email vàlid.");
     return;
+  }
+  const missingQuestions = scrollToFirstUnanswered();
+
+  if (missingQuestions) {
+    showError(
+      "survey",
+      "❌ Faltan preguntas por responder. Te hemos llevado a la primera pendiente."
+    );
+    return; // Detener el envío
   }
   try {
     const response = await fetch(
@@ -415,8 +483,7 @@ async function submitSurvey() {
   }
 }
 
-// Calcular i mostrar matches - ACTUALIZADO
-// Calcular i mostrar matches - ACTUALIZADO Y CORREGIDO
+// Calcular i mostrar matches - SOLO NOMBRES, SIN EMAIL
 async function calculateAndDisplayMatches() {
   const matchesContainer = document.getElementById("matchesContainer");
   const noResultsMessage = document.getElementById("noResultsMessage");
@@ -427,29 +494,75 @@ async function calculateAndDisplayMatches() {
   noResultsMessage.style.display = "none";
   resultsError.style.display = "none";
 
-  if (!currentUser) {
-    const userName = prompt(
-      "Si us plau, introdueix el teu nom per veure els teus matches:"
-    );
-    if (!userName) return;
-    currentUser = userName;
+  // PEDIR EMAIL
+  let userEmail = prompt(
+    "Si us plau, introdueix el teu EMAIL per veure els teus matches:\n\n(El mateix email que vas utilitzar per respondre l'enquesta)"
+  );
+
+  if (userEmail === null) {
+    matchesContainer.innerHTML = "";
+    return;
+  }
+
+  userEmail = userEmail.trim();
+
+  // Validación básica de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(userEmail)) {
+    resultsError.innerHTML = `
+      ❌ Format d'email invàlid.<br>
+      <small>Exemple: nom@exemple.com</small><br><br>
+      <button onclick="calculateAndDisplayMatches()" class="retry-button">
+        🔄 Tornar a intentar
+      </button>
+    `;
+    resultsError.style.display = "block";
+    matchesContainer.innerHTML = "";
+    return;
   }
 
   try {
+    // PRIMERO: Verificar el email y obtener el nombre
+    const emailCheckResponse = await fetch(
+      `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
+    );
+    const emailData = await emailCheckResponse.json();
+
+    if (!emailData.existeix) {
+      resultsError.innerHTML = `
+        ❌ No s'ha trobat cap usuari amb l'email: <strong>${userEmail}</strong><br>
+        <small>Assegura't que vas utilitzar aquest email per respondre l'enquesta.</small><br><br>
+        <button onclick="calculateAndDisplayMatches()" class="retry-button">
+          🔄 Prova amb un altre email
+        </button>
+      `;
+      resultsError.style.display = "block";
+      matchesContainer.innerHTML = "";
+      return;
+    }
+
+    // SEGUNDO: Usar el NOMBRE real para calcular matches
+    const userName = emailData.nom;
+
     const response = await fetch(`${API_URL}/matches`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        nom_usuari: currentUser,
+        nom_usuari: userName, // ← Solo enviamos el nombre
       }),
     });
 
     const data = await response.json();
 
     if (data.error) {
-      resultsError.textContent = "Error: " + data.error;
+      resultsError.innerHTML = `
+        ❌ Error: ${data.error}<br><br>
+        <button onclick="calculateAndDisplayMatches()" class="retry-button">
+          🔄 Tornar a intentar
+        </button>
+      `;
       resultsError.style.display = "block";
       matchesContainer.innerHTML = "";
       return;
@@ -458,11 +571,15 @@ async function calculateAndDisplayMatches() {
     matchesContainer.innerHTML = "";
 
     if (data.length === 0) {
+      noResultsMessage.innerHTML = `
+        No s'han trobat matches per: <strong>${userName}</strong><br>
+        <small>Encara no hi ha altres usuaris amb respostes similars.</small>
+      `;
       noResultsMessage.style.display = "block";
       return;
     }
 
-    // Mostrar matches
+    // Mostrar matches - SOLO NOMBRES (sin email)
     let hasPerfectMatch = false;
 
     data.forEach((match) => {
@@ -476,37 +593,38 @@ async function calculateAndDisplayMatches() {
         matchCard.className = "match-card heart-container";
       }
 
+      // SOLO MOSTRAR NOMBRES - sin email
       matchCard.innerHTML = `
-                <div class="match-percentage">${match.similitud}%</div>
-                <div class="match-info">
-                    <div class="match-names">
-                        ${currentUser} & ${match.usuari}
-                        ${
-                          isPerfectMatch
-                            ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>'
-                            : ""
-                        }
-                    </div>
-                    <div class="match-details">Teniu ${
-                      match.respostes_iguals
-                    } respostes similars de ${
-        match.total_preguntes
-      } preguntes</div>
-                </div>
-            `;
+        <div class="match-percentage">${match.similitud}%</div>
+        <div class="match-info">
+          <div class="match-names">
+            ${userName} & ${match.usuari}
+            ${
+              isPerfectMatch
+                ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>'
+                : ""
+            }
+          </div>
+          <div class="match-details">Teniu ${
+            match.respostes_iguals
+          } respostes similars de ${match.total_preguntes} preguntes</div>
+        </div>
+      `;
 
       matchesContainer.appendChild(matchCard);
-
-      // Generar corazones según el porcentaje de match
       generateHearts(matchCard, match.similitud);
     });
 
-    // Efectos especiales para match perfecto
     if (hasPerfectMatch) {
       showPerfectMatchCelebration();
     }
   } catch (error) {
-    resultsError.textContent = "Error de connexió: " + error.message;
+    resultsError.innerHTML = `
+      ❌ Error de connexió: ${error.message}<br><br>
+      <button onclick="calculateAndDisplayMatches()" class="retry-button">
+        🔄 Tornar a intentar
+      </button>
+    `;
     resultsError.style.display = "block";
     matchesContainer.innerHTML = "";
   }
@@ -644,6 +762,7 @@ function generateHearts(matchCard, matchPercentage) {
     });
   }
 }
+
 // Función para mostrar celebración de match perfecto
 function showPerfectMatchCelebration() {
   // Mostrar alerta especial
@@ -653,6 +772,7 @@ function showPerfectMatchCelebration() {
     );
   }, 500);
 }
+
 // Función para crear un corazón individual
 function createHeart(container, matchPercentage) {
   const heart = document.createElement("div");
@@ -730,6 +850,43 @@ function showAccessModal() {
   // Luego mostrar el modal
   document.getElementById("accessModal").style.display = "flex";
   document.getElementById("accessPassword").focus();
+}
+
+// Función para cambiar entre tabs del admin
+function switchAdminTab(tabName) {
+  // Remover active de todos los tabs
+  document
+    .querySelectorAll(".admin-tab")
+    .forEach((t) => t.classList.remove("active"));
+  document
+    .querySelectorAll(".admin-tab-content")
+    .forEach((c) => c.classList.remove("active"));
+
+  // Activar tab clickeado
+  document
+    .querySelector(`[data-admin-tab="${tabName}"]`)
+    .classList.add("active");
+  document
+    .getElementById(
+      `admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Content`
+    )
+    .classList.add("active");
+}
+
+function setupAdminTabs() {
+  const adminTabs = document.querySelectorAll(".admin-tab");
+
+  adminTabs.forEach((tab) => {
+    tab.addEventListener("click", function () {
+      const tabName = this.dataset.adminTab;
+      switchAdminTab(tabName); // Usar la nueva función
+
+      // Cargar datos si es necesario
+      if (tabName === "users") {
+        loadUsers();
+      }
+    });
+  });
 }
 
 // Función para verificar acceso

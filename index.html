@@ -14,16 +14,17 @@
             <h1>Enquesta de Compatibilitat</h1>
             <p class="description">Completa l'enquesta i descobreix els teus match amb companys de l'aula</p>
         </header>
-<!-- Barra de progreso FIJA -->
-<div class="progress-fixed">
-    <div class="progress-info">
-        <span>Progrés: <strong id="progressPercentage">0%</strong></span>
-        <span id="progressDetails">0/10 preguntes</span>
-    </div>
-    <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
-    </div>
-</div>
+
+        <!-- Barra de progreso FIJA -->
+        <div class="progress-fixed">
+            <div class="progress-info">
+                <span>Progrés: <strong id="progressPercentage">0%</strong></span>
+                <span id="progressDetails">0/10 preguntes</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
 
         <div class="card">
             <div class="tabs">
@@ -36,7 +37,8 @@
                 <div id="errorMessage" class="error" style="display: none;"></div>
 
                 <div class="form-group">
-                    <label for="userName">Nom i cognoms (Si prefereixes mantenir l'anonimat pots fer servir un pseudònim):</label>
+                    <label for="userName">Nom i cognoms (Si prefereixes mantenir l'anonimat pots fer servir un
+                        pseudònim):</label>
                     <input type="text" id="userName" placeholder="Introdueix el teu nom i cognoms">
                 </div>
                 <div class="form-group">
@@ -55,8 +57,6 @@
                 <div class="submitSurveyContainer">
                     <button id="submitSurvey">Enviar Respostes</button>
                 </div>
-
-
             </div>
 
             <div class="tab-content" id="results">
@@ -75,26 +75,39 @@
                     <h2>Panell d'Administració</h2>
                     <p>Des d'aquí pots gestionar les respostes i veure totes les coincidències.</p>
 
+                    <!-- TABS INTERNAS -->
+                    <div class="admin-tabs">
+                        <div class="admin-tab active" data-admin-tab="matches">🎯 Tots els Matchs</div>
+                        <div class="admin-tab" data-admin-tab="users">👥 Llistat d'Usuaris</div>
+                    </div>
+
                     <div class="admin-controls">
-                        <button id="viewAllMatches">Veure tots els match</button>
-                        <button id="reloadUsers">Actualitzar llista</button>
+                        <button id="viewAllMatches">Calcular Tots els Matchs</button>
+                        <button id="reloadUsers">Actualitzar Llista</button>
                     </div>
 
-                    <div class="card">
-                        <h3>Usuaris que han respost</h3>
-                        <div id="usersError" class="error" style="display: none;"></div>
-                        <ul id="userList" class="user-list">
-                            <li class="loading">Carregant usuaris...</li>
-                        </ul>
+                    <!-- CONTENIDO DE MATCHES -->
+                    <div id="adminMatchesContent" class="admin-tab-content active">
+                        <div id="allMatchesContainer">
+                            <!-- Tots els match es mostraran aquí -->
+                        </div>
                     </div>
 
-                    <div id="allMatchesContainer">
-                        <!-- Tots els match es mostraran aquí -->
+                    <!-- CONTENIDO DE USUARIOS -->
+                    <div id="adminUsersContent" class="admin-tab-content">
+                        <div class="card">
+                            <h3>Usuaris que han respost</h3>
+                            <div id="usersError" class="error" style="display: none;"></div>
+                            <ul id="userList" class="user-list">
+                                <li class="loading">Carregant usuaris...</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
     <!-- Modal de acceso para expositoras -->
     <div id="accessModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -107,7 +120,6 @@
             </div>
         </div>
     </div>
-
 
     <script src="./filomatch-front.js"></script>
 </body>
