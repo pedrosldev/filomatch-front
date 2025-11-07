@@ -417,41 +417,85 @@ async function submitSurvey() {
   }
 }
 
-// Calcular i mostrar matches - ACTUALIZADO
-// Calcular i mostrar matches - ACTUALIZADO Y CORREGIDO
+// Calcular i mostrar matches - SOLO NOMBRES, SIN EMAIL
 async function calculateAndDisplayMatches() {
   const matchesContainer = document.getElementById("matchesContainer");
   const noResultsMessage = document.getElementById("noResultsMessage");
   const resultsError = document.getElementById("resultsError");
 
-  matchesContainer.innerHTML =
-    '<div class="loading">Calculant matches...</div>';
+  matchesContainer.innerHTML = '<div class="loading">Calculant matches...</div>';
   noResultsMessage.style.display = "none";
   resultsError.style.display = "none";
 
-  if (!currentUser) {
-    const userName = prompt(
-      "Si us plau, introdueix el teu nom per veure els teus matches:"
-    );
-    if (!userName) return;
-    currentUser = userName;
+  // PEDIR EMAIL 
+  let userEmail = prompt(
+    "Si us plau, introdueix el teu EMAIL per veure els teus matches:\n\n(El mateix email que vas utilitzar per respondre l'enquesta)"
+  );
+
+  if (userEmail === null) {
+    matchesContainer.innerHTML = "";
+    return;
+  }
+
+  userEmail = userEmail.trim();
+
+  // Validación básica de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(userEmail)) {
+    resultsError.innerHTML = `
+      ❌ Format d'email invàlid.<br>
+      <small>Exemple: nom@exemple.com</small><br><br>
+      <button onclick="calculateAndDisplayMatches()" class="retry-button">
+        🔄 Tornar a intentar
+      </button>
+    `;
+    resultsError.style.display = "block";
+    matchesContainer.innerHTML = "";
+    return;
   }
 
   try {
+    // PRIMERO: Verificar el email y obtener el nombre
+    const emailCheckResponse = await fetch(
+      `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
+    );
+    const emailData = await emailCheckResponse.json();
+
+    if (!emailData.existeix) {
+      resultsError.innerHTML = `
+        ❌ No s'ha trobat cap usuari amb l'email: <strong>${userEmail}</strong><br>
+        <small>Assegura't que vas utilitzar aquest email per respondre l'enquesta.</small><br><br>
+        <button onclick="calculateAndDisplayMatches()" class="retry-button">
+          🔄 Prova amb un altre email
+        </button>
+      `;
+      resultsError.style.display = "block";
+      matchesContainer.innerHTML = "";
+      return;
+    }
+
+    // SEGUNDO: Usar el NOMBRE real para calcular matches
+    const userName = emailData.nom;
+    
     const response = await fetch(`${API_URL}/matches`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        nom_usuari: currentUser,
+        nom_usuari: userName, // ← Solo enviamos el nombre
       }),
     });
 
     const data = await response.json();
 
     if (data.error) {
-      resultsError.textContent = "Error: " + data.error;
+      resultsError.innerHTML = `
+        ❌ Error: ${data.error}<br><br>
+        <button onclick="calculateAndDisplayMatches()" class="retry-button">
+          🔄 Tornar a intentar
+        </button>
+      `;
       resultsError.style.display = "block";
       matchesContainer.innerHTML = "";
       return;
@@ -460,11 +504,15 @@ async function calculateAndDisplayMatches() {
     matchesContainer.innerHTML = "";
 
     if (data.length === 0) {
+      noResultsMessage.innerHTML = `
+        No s'han trobat matches per: <strong>${userName}</strong><br>
+        <small>Encara no hi ha altres usuaris amb respostes similars.</small>
+      `;
       noResultsMessage.style.display = "block";
       return;
     }
 
-    // Mostrar matches
+    // Mostrar matches - SOLO NOMBRES (sin email)
     let hasPerfectMatch = false;
 
     data.forEach((match) => {
@@ -478,42 +526,37 @@ async function calculateAndDisplayMatches() {
         matchCard.className = "match-card heart-container";
       }
 
+      // SOLO MOSTRAR NOMBRES - sin email
       matchCard.innerHTML = `
-                <div class="match-percentage">${match.similitud}%</div>
-                <div class="match-info">
-                    <div class="match-names">
-                        ${currentUser} & ${match.usuari}
-                        ${
-                          isPerfectMatch
-                            ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>'
-                            : ""
-                        }
-                    </div>
-                    <div class="match-details">Teniu ${
-                      match.respostes_iguals
-                    } respostes similars de ${
-        match.total_preguntes
-      } preguntes</div>
-                </div>
-            `;
+        <div class="match-percentage">${match.similitud}%</div>
+        <div class="match-info">
+          <div class="match-names">
+            ${userName} & ${match.usuari}
+            ${isPerfectMatch ? '<span class="perfect-match-badge">MATCH PERFECTE! 🎯</span>' : ""}
+          </div>
+          <div class="match-details">Teniu ${match.respostes_iguals} respostes similars de ${match.total_preguntes} preguntes</div>
+        </div>
+      `;
 
       matchesContainer.appendChild(matchCard);
-
-      // Generar corazones según el porcentaje de match
       generateHearts(matchCard, match.similitud);
     });
 
-    // Efectos especiales para match perfecto
     if (hasPerfectMatch) {
       showPerfectMatchCelebration();
     }
+
   } catch (error) {
-    resultsError.textContent = "Error de connexió: " + error.message;
+    resultsError.innerHTML = `
+      ❌ Error de connexió: ${error.message}<br><br>
+      <button onclick="calculateAndDisplayMatches()" class="retry-button">
+        🔄 Tornar a intentar
+      </button>
+    `;
     resultsError.style.display = "block";
     matchesContainer.innerHTML = "";
   }
 }
-
 // Carregar llista d'usuaris - ACTUALIZADO
 async function loadUsers() {
   const userList = document.getElementById("userList");
