@@ -1,7 +1,7 @@
 // Configuració - ACTUALIZADO para Node.jsback
-// const API_URL = "https://www.filomatch-back.piterxus.com/api";
+const API_URL = "https://www.filomatch-back.piterxus.com/api";
 // local
-const API_URL = "http://localhost:3000/api";
+// const API_URL = "http://localhost:3000/api";
 
 // Variables globals
 let surveyQuestions = [];
