@@ -316,6 +316,52 @@ function setupEventListeners() {
   });
 }
 
+function scrollToFirstUnanswered() {
+  // Buscar todas las preguntas
+  const questions = document.querySelectorAll(".question");
+
+  let firstUnanswered = null;
+
+  // Encontrar la primera pregunta sin responder
+  questions.forEach((question) => {
+    const questionId = question
+      .querySelector('input[type="radio"]')
+      ?.name.replace("question_", "");
+    const isAnswered = document.querySelector(
+      `input[name="question_${questionId}"]:checked`
+    );
+
+    if (!isAnswered && !firstUnanswered) {
+      firstUnanswered = question;
+      // Agregar clase pending si no la tiene
+      question.classList.add("pending");
+    }
+  });
+
+  if (firstUnanswered) {
+    // Hacer scroll suave a la pregunta
+    firstUnanswered.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    // Efecto de destello para destacarla
+    firstUnanswered.style.transition = "all 0.5s ease";
+    firstUnanswered.style.backgroundColor = "#fff5f5";
+    firstUnanswered.style.borderLeft = "4px solid #ff4444";
+
+    // Quitar el efecto después de 3 segundos
+    setTimeout(() => {
+      firstUnanswered.style.backgroundColor = "";
+      firstUnanswered.style.borderLeft = "";
+    }, 3000);
+
+    return true; // Hay preguntas pendientes
+  }
+
+  return false; // Todas respondidas
+}
+
 // Enviar enquesta al servidor - ACTUALIZADO
 async function submitSurvey() {
   const userName = document.getElementById("userName").value.trim();
@@ -331,6 +377,15 @@ async function submitSurvey() {
     showError("survey", "Si us plau, introdueix un email vàlid.");
     return;
   }
+      const missingQuestions = scrollToFirstUnanswered();
+
+      if (missingQuestions) {
+        showError(
+          "survey",
+          "❌ Faltan preguntas por responder. Te hemos llevado a la primera pendiente."
+        );
+        return; // Detener el envío
+      }
   try {
     const response = await fetch(
       `${API_URL}/email-existeix/${encodeURIComponent(userEmail)}`
